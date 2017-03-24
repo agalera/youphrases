@@ -40,7 +40,8 @@ def add():
 
     os.remove(os.path.join(BASE, "tmp_" + filename))
 
-    db[_id] = {'filename': os.path.join(BASE, filename)}
+    db[_id] = {'yt_id': data['id'],
+               'filename': os.path.join(BASE, filename)}
 
     save()
     if data.get('play'):
