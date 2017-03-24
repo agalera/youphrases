@@ -5,6 +5,7 @@ RUN apt-get update -y
 RUN apt-get install -y gcc
 RUN apt-get install -y deb-multimedia-keyring --force-yes
 RUN apt-get install -y ffmpeg --force-yes
+RUN apt-get install -y sox libsox-fmt-mp3
 
 RUN mkdir /w
 

@@ -1,5 +1,4 @@
-from bottle import post, request, HTTPError, run
-import uuid
+from bottle import post, get, delete, request, HTTPError, run
 from subprocess import call
 import json
 from moviepy.editor import AudioFileClip
@@ -7,34 +6,53 @@ import os
 
 
 db = {}
+BASE = "/w"
 
-@post('/add')
+
+@post('/')
 def add():
     data = request.json
-    if ('id', 'init', 'end', 'name') not in data:
-        return HTTPError(400)
 
-    _id = uuid.uuid4()
-    filename = "/w/%s.mp3" % _id
+    for check in ['id', 'init', 'end', 'name']:
+        if check not in data:
+            return HTTPError(400)
+
+    # if data['name'] in db:
+    #     return HTTPError(302)
+
+    _id = data['name']
+
+    filename = "%s.mp3" % _id
     call(["youtube-dl", "-o",
-              "tmp_%s" % filename,
-              "-f", "bestaudio",
-              "http://www.youtube.com/watch?v=%s" % data['id']])
+          os.path.join(BASE, "tmp_" + filename),
+          "-f", "bestaudio",
+          "http://www.youtube.com/watch?v=%s" % data['id']])
 
-    clip = AudioFileClip("tmp_%s" % filename).sub_clip(data['init'], data['end'])
-    clip.write_audiofile(filename)
-    
-    os.remove("tmp_%s" % filename)
+    full_clip = AudioFileClip(os.path.join(BASE, "tmp_" + filename))
+    subclip = full_clip.subclip(data['init'], data['end'])
+    subclip.write_audiofile(os.path.join(BASE, filename))
 
-    db[_id] = {'name': data['name'],
-               'filename': filename}
+    os.remove(os.path.join(BASE, "tmp_" + filename))
 
-    with open('db.json', 'w') as outfile:
-        json.dump(db, outfile)
+    db[_id] = {'filename': os.path.join(BASE, filename)}
+
+    save()
+    if data.get('play'):
+        play(_id)
+
+
+@delete('/<id>')
+def remove(id):
+    if id in db:
+        os.remove(db[id]['filename'])
+        del db[id]
+        save()
+
 
 @get('/')
 def all():
     return db
+
 
 @get('/play/<id>')
 def play(id):
@@ -42,6 +60,12 @@ def play(id):
         return HTTPError(404)
 
     print("play %s" % db[id])
-    call(['play', db[id][filename]])
+    call(['play', db[id]['filename']])
+
+
+def save():
+    with open('db.json', 'w') as outfile:
+        json.dump(db, outfile)
+
 
 run(host='0.0.0.0', port=9999)
