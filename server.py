@@ -5,8 +5,14 @@ from moviepy.editor import AudioFileClip
 import os
 
 
-db = {}
 BASE = "/w"
+DB_PATH = os.path.join(BASE, 'db.json')
+if os.path.exists(DB_PATH):
+
+    with open(DB_PATH) as data_file:
+        db = json.load(data_file)
+else:
+    db = {}
 
 
 @post('/')
@@ -64,7 +70,7 @@ def play(id):
 
 
 def save():
-    with open('db.json', 'w') as outfile:
+    with open(DB_PATH, 'w') as outfile:
         json.dump(db, outfile)
 
 
